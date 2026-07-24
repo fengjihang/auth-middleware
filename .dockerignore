@@ -1,0 +1,13 @@
+# 宿主机虚拟环境 / 缓存：绝对不能带进 build context
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.git/
+# 本地密钥与开发库：容器连接串由 compose 注入，不用宿主 .env
+.env
+*.db
+# 测试与压测脚本：镜像只跑服务，CI 单独跑测试
+tests/

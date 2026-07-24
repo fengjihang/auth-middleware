@@ -1,0 +1,52 @@
+# 生产口径编排：PostgreSQL + Redis + 应用
+# 用法：docker compose up --build
+# 变量可在同级 .env 覆盖（如 AUTH_JWT_SECRET、POSTGRES_PASSWORD）。
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-auth}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-authpass}
+      POSTGRES_DB: ${POSTGRES_DB:-authdb}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-auth}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # 异步驱动连 PG（注意是 asyncpg，不是 psycopg）；host 用服务名 db
+      AUTH_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-auth}:${POSTGRES_PASSWORD:-authpass}@db:5432/${POSTGRES_DB:-authdb}
+      AUTH_REDIS_URL: redis://redis:6379/0
+      # 生产务必覆盖；不覆盖则使用占位值（应用会告警，但不阻断启动）
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-change-me-in-prod}
+      AUTH_ADMIN_EMAIL: ${AUTH_ADMIN_EMAIL:-admin@example.com}
+      AUTH_ADMIN_PASSWORD: ${AUTH_ADMIN_PASSWORD:-ChangeMe123}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

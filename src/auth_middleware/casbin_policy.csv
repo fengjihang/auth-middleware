@@ -1,0 +1,10 @@
+# Casbin 策略（谁有什么权限）
+# 列含义：p, <角色>, <资源obj>, <动作act>
+# 改权限只改这个文件即可，例如想给 user 加 users:read，新增一行：p, user, users, read
+
+# 管理员：通配符 = 拥有所有资源的所有动作
+p, admin, *, *
+
+# 普通用户：仅能读/写自己的 profile
+p, user, profile, read
+p, user, profile, write

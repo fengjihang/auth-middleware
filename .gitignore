@@ -1,0 +1,30 @@
+# 虚拟环境
+.venv/
+venv/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# 测试/类型/ lint 缓存
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 本地开发数据库（SQLite）
+*.db
+*.sqlite3
+
+# 环境变量与密钥（绝不提交）
+.env
+*.secret
+
+# 编辑器
+.idea/
+.vscode/
+login_resp.json
+*.db
+__pycache__/
