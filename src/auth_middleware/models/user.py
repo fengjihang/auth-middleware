@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from auth_middleware.core.database import Base
@@ -18,6 +18,8 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # 角色：RBAC 的核心属性，默认 "user"；授权判断基于这个字段（见 casbin_policy.csv）
     role: Mapped[str] = mapped_column(String(32), default="user", index=True)
+    # 令牌版本：每次"全量吊销"(logout-all / 强制改密)时 +1，旧版本 token 立即失效（OQ-6）
+    token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     # 昵称（演示 profile:write 权限）
     display_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

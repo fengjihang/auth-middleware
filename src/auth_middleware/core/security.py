@@ -9,6 +9,7 @@
 import asyncio
 import bcrypt
 import jwt
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from auth_middleware.core.config import settings
@@ -30,30 +31,44 @@ def verify_password(password: str, hashed: str) -> bool:
 
 
 # ---------------- JWT ----------------
-def _encode(sub: str, token_type: str, ttl: int) -> str:
+def _encode(
+    sub: str, token_type: str, ttl: int, token_version: int | None = None
+) -> str:
     now = _now()
     payload = {
         "sub": sub,  # subject：这里放用户 id
         "type": token_type,  # "access" 或 "refresh"
+        "jti": uuid.uuid4().hex,  # 唯一令牌 ID，用于单会话吊销（OQ-6）
         "iat": now,  # issued at
         "exp": now + timedelta(seconds=ttl),  # expiry
     }
+    # v = 签发时的用户 token_version；logout-all/强制改密会 bump，
+    # 旧版本 token 立即失效（OQ-6 全量吊销）。无该字段的旧 token 视为不受版本约束。
+    if token_version is not None:
+        payload["v"] = token_version
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
-def create_access_token(sub: str, ttl: int | None = None) -> str:
-    return _encode(sub, "access", ttl or settings.access_token_ttl)
+def create_access_token(
+    sub: str, ttl: int | None = None, token_version: int | None = None
+) -> str:
+    return _encode(sub, "access", ttl or settings.access_token_ttl, token_version)
 
 
-def create_refresh_token(sub: str, ttl: int | None = None) -> str:
-    return _encode(sub, "refresh", ttl or settings.refresh_token_ttl)
+def create_refresh_token(
+    sub: str, ttl: int | None = None, token_version: int | None = None
+) -> str:
+    return _encode(sub, "refresh", ttl or settings.refresh_token_ttl, token_version)
 
 
-def create_token_pair(sub: str) -> dict:
-    """一次签发 access + refresh，返回可直接塞进 Pydantic Token 的字典。"""
+def create_token_pair(sub: str, token_version: int | None = None) -> dict:
+    """一次签发 access + refresh，返回可直接塞进 Pydantic Token 的字典。
+
+    token_version 透传到两种 token 的 `v` 声明，供全量吊销比对（OQ-6）。
+    """
     return {
-        "access_token": create_access_token(sub),
-        "refresh_token": create_refresh_token(sub),
+        "access_token": create_access_token(sub, token_version=token_version),
+        "refresh_token": create_refresh_token(sub, token_version=token_version),
         "token_type": "bearer",
     }
 

@@ -32,3 +32,16 @@ class UserRepository:
     async def list_all(self) -> list[User]:
         result = await self.db.execute(select(User))
         return list(result.scalars().all())
+
+    async def bump_token_version(self, user_id: int) -> User | None:
+        """全量吊销：把该用户的 token_version +1，使其所有已签发 token 立即失效（OQ-6）。
+
+        返回被更新的用户；用户不存在时返回 None。
+        """
+        user = await self.get_by_id(user_id)
+        if user is None:
+            return None
+        user.token_version = (user.token_version or 0) + 1
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user

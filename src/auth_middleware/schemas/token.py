@@ -11,3 +11,10 @@ class Token(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    """登出请求：提供需要吊销的令牌（OQ-6）。access/refresh 至少其一。"""
+
+    access_token: str | None = None
+    refresh_token: str | None = None

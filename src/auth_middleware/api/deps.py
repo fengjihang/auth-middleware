@@ -18,6 +18,7 @@ from auth_middleware.core.security import decode_token
 from auth_middleware.models.audit_log import AuditLog
 from auth_middleware.models.user import User
 from auth_middleware.repositories.audit_repository import AuditRepository
+from auth_middleware.repositories.revoked_token_repository import RevokedTokenRepository
 from auth_middleware.repositories.user_repository import UserRepository
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -44,6 +45,21 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive"
         )
+
+    # ---- OQ-6 Token 吊销检查 ----
+    # 1) 单会话吊销：该 token 的 jti 是否在黑名单（logout 写入）。
+    jti = payload.get("jti")
+    if jti and await RevokedTokenRepository(db).is_revoked(jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked"
+        )
+    # 2) 全量吊销：token 签发时的版本(v)与用户当前版本不一致（logout-all/强制改密后）。
+    #    无 v 字段的旧 token 视为不受版本约束，避免历史 token 突然失效。
+    if "v" in payload and payload["v"] != user.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token superseded"
+        )
+
     return user
 
 
