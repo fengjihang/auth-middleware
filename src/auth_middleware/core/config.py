@@ -46,6 +46,23 @@ class Settings(BaseSettings):
     admin_email: str = "admin@example.com"
     admin_password: str = "admin123456"
 
+    # ---- CORS（Phase 7 安全加固）----
+    # 显式允许的前端源；默认空列表 = 不开放任何跨域，禁止 "*" 通配。
+    # 生产环境由运维通过 AUTH_CORS_ALLOW_ORIGINS 设置具体域名（逗号分隔）。
+    cors_allow_origins: list[str] = []
+
+    def validate_security(self) -> None:
+        """生产环境安全自检：使用默认 JWT 密钥时直接 fail-fast。
+
+        密钥本身已从环境变量(AUTH_JWT_SECRET)读取、且 .env 已被 git 忽略，
+        这里只是在"忘了配环境变量"时尽早暴露，避免以不安全配置上线。
+        """
+        if not self.debug and self.jwt_secret == "change-me-in-production":
+            raise RuntimeError(
+                "安全告警：生产环境(jwt_secret 未显式配置)仍使用默认 JWT 密钥。"
+                "请通过环境变量 AUTH_JWT_SECRET 设置一个强随机密钥后再启动。"
+            )
+
 
 # 全局单例，其他地方直接 from auth_middleware.core.config import settings
 settings = Settings()

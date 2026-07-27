@@ -3,6 +3,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 
 from auth_middleware.api.routes.audit import router as audit_router
@@ -23,6 +24,8 @@ import auth_middleware.models
 async def lifespan(app: FastAPI):
     # 启动时初始化结构化日志
     configure_logging()
+    # 生产安全自检：密钥/口令缺失默认值时直接 fail-fast（开发环境 debug=true 放行）
+    settings.validate_security()
     # Redis 连接池随应用启停（不可用时自动降级，不影响启动）
     async with redis_lifespan():
         # 启动时建表（开发环境用；生产用 Alembic 迁移，见 Phase 3）
@@ -40,8 +43,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ---- Phase 7：CORS（安全加固，禁用通配符）----
+# 仅放行运维在 AUTH_CORS_ALLOW_ORIGINS 中显式配置的源；默认空列表 = 不开放跨域。
+# 不设置 allow_origins=["*"]，避免任意网站带用户凭证调用本 API。
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_allow_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
 # ---- Phase 6：ASGI 中间件链 ----
 # 可观测性中间件：structlog + Prometheus 指标 + request_id 注入
+# （注意：CORS 加在更外层，便于处理浏览器预检 OPTIONS）
 app.add_middleware(ObservabilityMiddleware)
 
 

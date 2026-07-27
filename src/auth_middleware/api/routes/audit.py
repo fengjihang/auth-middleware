@@ -3,6 +3,8 @@
 仅 admin 角色可访问，提供分页+过滤查询能力。
 """
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +28,8 @@ async def list_audit_logs(
     user_id: int | None = Query(None, description="按用户 ID 过滤"),
     action: str | None = Query(None, description="按操作类型过滤"),
     allowed: bool | None = Query(None, description="按是否通过过滤"),
+    date_from: datetime | None = Query(None, description="按起始时间过滤(ISO 8601)"),
+    date_to: datetime | None = Query(None, description="按截止时间过滤(ISO 8601)"),
     db: AsyncSession = Depends(get_db),
     _current_user: User = Depends(get_current_user),
 ) -> PaginatedAuditLogs:
@@ -37,6 +41,8 @@ async def list_audit_logs(
         user_id=user_id,
         action=action,
         allowed=allowed,
+        date_from=date_from,
+        date_to=date_to,
     )
     pages = max(1, (total + limit - 1) // limit)
     return PaginatedAuditLogs(

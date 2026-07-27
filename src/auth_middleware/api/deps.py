@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth_middleware.core.casbin import enforce as casbin_enforce
 from auth_middleware.core.database import get_db
+from auth_middleware.core.logging import get_logger
+from auth_middleware.core.metrics import AUDIT_FAILURES
 from auth_middleware.core.security import decode_token
 from auth_middleware.models.audit_log import AuditLog
 from auth_middleware.models.user import User
@@ -19,6 +21,8 @@ from auth_middleware.repositories.audit_repository import AuditRepository
 from auth_middleware.repositories.user_repository import UserRepository
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+logger = get_logger()
 
 
 async def get_current_user(
@@ -74,6 +78,15 @@ def require_permission(obj: str, act: str) -> Callable[..., Awaitable[User]]:
         await AuditRepository(db).add(audit)
         await db.commit()
         if not allowed:
+            # 越权行为本身也是审计价值点：计数到 Prometheus，便于监控异常访问模式
+            AUDIT_FAILURES.labels(action=f"{obj}:{act}").inc()
+            logger.warning(
+                "permission_denied",
+                user_id=user.id,
+                email=user.email,
+                action=f"{obj}:{act}",
+                resource=f"{request.method} {request.url.path}",
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
             )

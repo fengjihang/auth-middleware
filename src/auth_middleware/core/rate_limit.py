@@ -45,9 +45,14 @@ return {allowed, tostring(tokens)}
 
 
 def compute_token_bucket(
-    tokens, ts, now, capacity, rate, requested: int = 1
+    tokens, ts, now, rate, capacity, requested: int = 1
 ) -> tuple[bool, float]:
-    """纯函数版令牌桶逻辑（与 Lua 等价），便于单元测试、不依赖 Redis。"""
+    """纯函数版令牌桶逻辑（与 Lua 等价），便于单元测试、不依赖 Redis。
+
+    参数顺序刻意与 consume()/Lua 脚本保持一致：``(rate, capacity)``，
+    避免"看着 consume 写 compute_token_bucket"时把 capacity/rate 位置写反
+    （历史上就因参数顺序不一致踩过坑）。
+    """
     if tokens is None:
         tokens, ts = capacity, now
     delta = max(0.0, now - ts)
