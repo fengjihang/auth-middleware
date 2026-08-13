@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from prometheus_client import make_asgi_app
 
 from auth_middleware.api.routes.audit import router as audit_router
@@ -77,3 +80,13 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(rbac_router, prefix="/api/v1")
 # 挂载审计日志查询路由：/api/v1/admin/audit-logs
 app.include_router(audit_router, prefix="/api/v1")
+
+# ---- 前端试用页面（同源托管，纯静态，零新依赖）----
+_STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def index() -> FileResponse:
+    """返回浏览器试用页面（同源托管，规避 CORS）。"""
+    return FileResponse(_STATIC_DIR / "index.html")

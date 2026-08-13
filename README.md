@@ -147,4 +147,11 @@ curl -H "Authorization: Bearer <admin_token>" \
   "http://localhost:8000/api/v1/admin/audit-logs?page=1&limit=5"
 ```
 
+## 项目亮点 / 面试向
+
+这是一个按"生产级"标准逐步构建的认证授权中台，覆盖 **认证 · RBAC 授权 · 令牌吊销 · 限流 · 审计 · 可观测性** 六层能力。为什么算生产级、以及后续升级路线，见 [`docs/production-grade.md`](docs/production-grade.md)；需求/设计/测试三套文档在 `docs/`。
+
+> 快速自检：`/health` 探活、`/metrics` Prometheus 指标、`/docs` Swagger、根路径 `/` 附带纯静态试用面板（注册/登录/刷新/RBAC 越权演示/审计查询/登出）。
+
+
 

@@ -16,7 +16,11 @@ dist/
 
 # 本地开发数据库（SQLite）
 *.db
+*.db.bak
 *.sqlite3
+
+# 项目工作记忆（含本地笔记，绝不提交）
+.workbuddy/
 
 # 环境变量与密钥（绝不提交）
 .env

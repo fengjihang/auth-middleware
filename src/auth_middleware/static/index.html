@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>认证授权中台 · 试用台</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <div>
+        <h1>认证授权中台 · 试用台</h1>
+        <div class="sub">在浏览器里试用全部接口 · 默认管理员 admin@example.com / admin123456</div>
+      </div>
+      <div class="status-bar">
+        <span id="status-badge" class="badge badge-off">未登录</span>
+        <span class="rid">X-Request-ID: <span id="request-id">—</span></span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- 1. 认证 -->
+      <section class="card">
+        <h2>认证 <span class="tag">auth</span></h2>
+
+        <label>注册邮箱</label>
+        <input id="reg-email" placeholder="new@example.com" />
+        <label>注册口令</label>
+        <input id="reg-password" type="password" placeholder="至少 8 位" />
+        <label>显示名称</label>
+        <input id="reg-name" placeholder="Nickname" />
+        <div class="btn-row">
+          <button id="btn-register">注册</button>
+        </div>
+        <pre class="result" id="reg-result" style="display:none"></pre>
+
+        <hr style="border:none;border-top:1px solid var(--line);margin:16px 0" />
+
+        <label>登录邮箱</label>
+        <input id="login-email" value="admin@example.com" />
+        <label>登录口令</label>
+        <input id="login-password" type="password" value="admin123456" />
+        <div class="btn-row">
+          <button id="btn-login">登录</button>
+          <button id="btn-refresh" class="secondary">刷新令牌</button>
+        </div>
+        <pre class="result" id="login-result" style="display:none"></pre>
+      </section>
+
+      <!-- 2. 当前用户 / 资料 -->
+      <section class="card">
+        <h2>当前用户 <span class="tag">me</span></h2>
+        <div class="hint">凭 access token 读取身份；修改个人资料（RBAC: profile:write）。</div>
+        <div class="btn-row">
+          <button id="btn-me">获取 /me</button>
+          <button id="btn-profile-get" class="secondary">读取资料</button>
+        </div>
+        <pre class="result" id="me-result" style="display:none"></pre>
+
+        <label style="margin-top:14px">显示名称</label>
+        <input id="profile-name" placeholder="新昵称" />
+        <div class="btn-row">
+          <button id="btn-profile-put">更新资料</button>
+        </div>
+        <pre class="result" id="profile-result" style="display:none"></pre>
+      </section>
+
+      <!-- 3. 越权演示 -->
+      <section class="card">
+        <h2>RBAC 越权演示 <span class="tag">rbac</span></h2>
+        <div class="hint">
+          用当前 token 调用 <code>/rbac/admin/users</code>（需 users:read）。
+          普通用户会被拦成 403 并记审计；admin 则返回 200。
+        </div>
+        <div class="btn-row">
+          <button id="btn-admin">调用 admin/users</button>
+        </div>
+        <pre class="result" id="admin-result" style="display:none"></pre>
+      </section>
+
+      <!-- 4. 审计查询 -->
+      <section class="card">
+        <h2>审计日志查询 <span class="tag">admin</span></h2>
+        <div class="hint">分页 + 过滤，结果以表格展示（需 audit:read）。</div>
+        <div class="row">
+          <div><label>页码</label><input id="audit-page" value="1" /></div>
+          <div><label>每页</label><input id="audit-limit" value="10" /></div>
+        </div>
+        <div class="row">
+          <div><label>动作 (如 auth:login)</label><input id="audit-action" placeholder="留空=全部" /></div>
+          <div>
+            <label>是否通过</label>
+            <select id="audit-allowed">
+              <option value="">全部</option>
+              <option value="true">通过</option>
+              <option value="false">拒绝</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div><label>起始时间</label><input id="audit-from" type="datetime-local" /></div>
+          <div><label>截止时间</label><input id="audit-to" type="datetime-local" /></div>
+        </div>
+        <div class="btn-row">
+          <button id="btn-audit">查询审计日志</button>
+        </div>
+        <div id="audit-info" class="hint"></div>
+        <div id="audit-table"></div>
+        <pre class="result" id="audit-result" style="display:none"></pre>
+      </section>
+
+      <!-- 5. 会话管理 -->
+      <section class="card">
+        <h2>会话管理 <span class="tag">token</span></h2>
+        <div class="hint">
+          登出：把当前令牌写入吊销黑名单（OQ-6）。<br />
+          全量登出：使该用户所有会话失效（bump token_version）。
+        </div>
+        <div class="btn-row">
+          <button id="btn-logout" class="ghost">登出</button>
+          <button id="btn-logout-all" class="danger">全量登出</button>
+        </div>
+        <pre class="result" id="logout-result" style="display:none"></pre>
+      </section>
+    </div>
+
+    <footer>
+      生产级认证与授权中台 · 试用页面由 FastAPI 同源托管（纯静态，零新依赖）<br />
+      <a href="/docs" target="_blank" rel="noopener">API 文档 /docs</a> ·
+      <a href="/metrics" target="_blank" rel="noopener">Prometheus /metrics</a>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

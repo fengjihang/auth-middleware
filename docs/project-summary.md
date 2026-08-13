@@ -59,13 +59,13 @@ Dockerfile / docker-compose.yml(postgres:16+redis:7+app) / gunicorn.conf.py / py
 7. **OQ-2 审计时间过滤**：`GET /api/v1/admin/audit-logs` 现接收并透传 `date_from`/`date_to` 到 `repo.list_paginated`。
 
 ## 5. 测试现状与运行
-- 全量：**33 passed + 1 skipped**（0 失败，≈97%）。跳过项 = HTTP 层 429 限流用例，因本机 Redis 不可达而 fail-open 跳过（CI 起 Redis 即覆盖）。
+- 全量：**38 passed + 1 skipped**（0 失败）。跳过项 = HTTP 层 429 限流用例，因本机 Redis 不可达而 fail-open 跳过（CI 起 Redis 即覆盖）。
 - 运行：`.venv/Scripts/python.exe -m pytest -v`（或 `C:\minicode3\python.exe` + `pip install -e .`）。集成测试用独立内存 SQLite，不污染开发库。
 
 ## 6. Git 现状（重要：本轮改动尚未提交）
 - 最新 commit：`7957d12 feat: 生产级认证与授权中台 Phase 1-6 完整交付`
 - **已修改(8)**：`api/deps.py`、`api/routes/audit.py`(OQ-2)、`api/routes/auth.py`、`core/config.py`、`core/middleware.py`、`core/rate_limit.py`、`main.py`、`tests/test_rate_limit.py`
-- **未跟踪(5)**：`docs/design.md`、`docs/prd.md`、`docs/test-report.md`、`docs/learning-note-phase1-6.docx`、`tests/test_integration.py`
+- **未跟踪(含 OQ-6 新增)**：上述 5 个文档/测试文件 + `models/revoked_token.py`、`repositories/revoked_token_repository.py`、`alembic/versions/a1f2c3d4e5b6_add_token_revocation.py` 等 OQ-6 相关文件（具体以 `git status` 为准）。
 - 建议：新对话里第一件事可以是 `git add -A && git commit -m "..."` 先把收尾工作入库。
 
 ## 7. 已知问题 / 待优化清单（新对话可挑着做）
@@ -73,11 +73,11 @@ Dockerfile / docker-compose.yml(postgres:16+redis:7+app) / gunicorn.conf.py / py
 - **OQ-3 · 规范化管理员创建 + 密钥轮换**：当前靠 `seed_admin()` + `.env` 明文 `admin_password`，不符生产规范。
 - **OQ-4 · casbin 策略热更新**：Enforcer 进程内单例，改 csv 需重启 → 支持 `load_policy()` 热加载。
 - **OQ-5 · 用户管理 API**：仅演示列表，缺停用/启用/改角色/删除/分页。
-- **OQ-6 · Token 吊销机制**：refresh 无黑名单/状态表，access 无服务端状态；`is_active` 变更后 access 在 1h TTL 内仍有效。
+- **OQ-6 · Token 吊销机制 — 已基础实现（2026-07-29 通读确认）**：已落地 `revoked_tokens` 表 + `RevokedTokenRepository` + `POST /logout`(jti 黑名单单会话吊销) + `POST /logout-all`(bump token_version 全量吊销) + Alembic 迁移 `a1f2c3d4e5b6`；`get_current_user`/`refresh` 做 jti 黑名单 + `v` 版本双重校验。**缺口**：logout 路径无自动化测试；`purge_expired` 未接定时任务（OQ-9）。
 - **OQ-7 · 登录失败/撞库防护**：仅审计，无账户锁定/失败延迟/IP 计数。
 - **OQ-8 · 限流维度与 X-Forwarded-For 信任**：当前按客户端 IP，取 `X-Forwarded-For` 首段（可伪造）；可加账户级限流 + 信任策略配置。
 - **OQ-9 · 审计日志留存/归档**：审计表无清理策略，长期会无限增长。
-- **测试缺口**：`validate_security`(密钥 fail-fast) 与 CORS 暂无专用自动化用例，建议补。
+- **测试缺口**：`validate_security`(密钥 fail-fast) 与 CORS 暂无专用用例；**OQ-6 的 /logout、/logout-all、jti 黑名单、token_version 全量吊销均无自动化测试**（最该补）。
 
 ## 8. 新对话建议开场白（直接复制）
 > 继续优化 `D:\code\auth-middleware` 这个认证授权中台。现状：Phase 1-6 已完成，Phase 7 取消；已补集成测试(33 passed+1 skipped) 并修复 7 类 bug + OQ-2 审计时间过滤；三套文档(prd/design/test-report)已生成；但所有收尾改动尚未 git commit。请先帮我：(1) 把当前改动提交入库；(2) 挑选一个最有价值的优化项（如 OQ-1 指标埋点 / OQ-6 Token 吊销 / OQ-7 撞库防护）做实现并补测试。先给方案再动手。
