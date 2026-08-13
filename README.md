@@ -2,16 +2,6 @@
 
 基于 FastAPI 的认证与授权中台，按"实战 + 目标衍生"路线逐步构建。
 
-## 阶段进度
-- [x] Phase 1 工程骨架
-- [x] Phase 2 MVP 认证
-- [x] Phase 3 授权与权限管理
-- [x] Phase 4 高并发
-- [x] 数据库迁移 Alembic（替代启动 create_all，生产用 `alembic upgrade head`）
-- [x] Phase 5 容器化
-- [x] Phase 6 日志与可观测性
-- [ ] Phase 6 日志与可观测性
-- [ ] Phase 7 AI 辅助开发与版本管理
 
 ## 本地开发
 ```bash
