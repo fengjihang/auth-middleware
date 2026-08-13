@@ -18,7 +18,7 @@ pytest
 
 接口文档：http://127.0.0.1:8000/docs
 
-## Phase 4 高并发
+##  高并发
 
 本阶段叠加四块生产级能力：
 
@@ -67,7 +67,7 @@ alembic downgrade -1
 - `alembic/env.py` 复用应用异步 engine，连接串取自 `AUTH_DATABASE_URL`。
 - 容器/CI：启动应用前先跑 `python scripts/migrate.py`，再起 gunicorn。
 
-## Phase 5 容器化
+## 容器化
 
 把"生产口径"整套用 Docker 跑起来（多进程 gunicorn + PostgreSQL + Redis）。
 
@@ -93,7 +93,7 @@ docker compose up -d --build
 
 > 注：本机若无 Docker 守护进程（如受限环境），文件已就绪，可在有 Docker 的机器/CI 上直接 `up`。
 
-## Phase 6 日志与可观测性
+## 日志与可观测性
 
 本阶段叠加三块可观测能力：结构化日志 + 审计日志查询 API + Prometheus 指标。
 
@@ -137,7 +137,7 @@ curl -H "Authorization: Bearer <admin_token>" \
   "http://localhost:8000/api/v1/admin/audit-logs?page=1&limit=5"
 ```
 
-## 项目亮点 / 面试向
+## 项目亮点 
 
 这是一个按"生产级"标准逐步构建的认证授权中台，覆盖 **认证 · RBAC 授权 · 令牌吊销 · 限流 · 审计 · 可观测性** 六层能力。为什么算生产级、以及后续升级路线，见 [`docs/production-grade.md`](docs/production-grade.md)；需求/设计/测试三套文档在 `docs/`。
 
